@@ -8,28 +8,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y python3-pip python3-setuptools python3-venv \
-          zip unzip openjdk-17-jdk git
+      - name: Get Date (for cache key)
+        id: get-date
+        run: echo "date=$(date -u +'%Y%m%d')" >> "$GITHUB_OUTPUT"
 
-    - name: Install Buildozer
-      run: |
-        pip install --upgrade pip
-        pip install buildozer cython
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: .buildozer_global
+          key: buildozer-global-${{ hashFiles('buildozer.spec') }}
 
-    - name: Initialize Buildozer
-      run: buildozer init || echo "Already exists"
+      - name: Cache Buildozer directory
+        uses: actions/cache@v4
+        with:
+          path: .buildozer
+          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
 
-    - name: Build APK
-      run: buildozer android debug
+      - name: Build with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          # najprv doinštaluje Cython + virtualenv, potom spustí buildozer
+          command: pip3 install --user --upgrade Cython==0.29.33 virtualenv; buildozer android debug
+          buildozer_version: stable
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: HlaseniaA-APK
-        path: bin/*.apk
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-apk
+          path: ${{ steps.buildozer.outputs.filename }}
