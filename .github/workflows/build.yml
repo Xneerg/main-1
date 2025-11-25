@@ -1,27 +1,32 @@
 name: Build APK – Hlasenia A (KivyMD 2.0.1-dev)
 
 on:
-  workflow_dispatch:          # ručné spustenie
+  workflow_dispatch:
   push:
     branches: [ main, master ]
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
+
       - name: Checkout repozitára
         uses: actions/checkout@v4
 
-      # Java 17 – povinné pre Buildozer
+      # -------------------------------------------
+      # Java 17 – Povinné pre Android/Gradle
+      # -------------------------------------------
       - name: Nastav Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # Systémové závislosti (čisté, bez gstreamer chýb)
+      # -------------------------------------------
+      # Systémové balíčky
+      # -------------------------------------------
       - name: Inštalácia systémových balíčkov
         run: |
           sudo apt update -y
@@ -32,45 +37,56 @@ jobs:
             libffi-dev libssl-dev libsqlite3-dev libltdl-dev \
             libglib2.0-dev
 
-      # Android SDK + NDK 25b – opravené pre novú štruktúru (december 2025)
-      - name: Inštalácia Android SDK & NDK 25b
+      # -------------------------------------------
+      # Android SDK + Build-tools 33.0.2 + NDK 25b
+      # -------------------------------------------
+      - name: Inštalácia Android SDK & NDK (presná verzia pre Buildozer)
         run: |
-          mkdir -p ~/android/cmdline-tools
-          cd ~/android
+          mkdir -p $HOME/android/cmdline-tools/latest
+          cd $HOME/android
 
-          # Najnovší commandlinetools (verzia 12.0 – funguje bez mv/latest)
+          # Najnovší commandlinetools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-12276707_latest.zip
-          unzip -q commandlinetools-linux-*.zip
+          unzip -q commandlinetools-linux-*.zip -d cmdline-tools/latest
 
-          # Štruktúra: priamo cmdline-tools/bin/sdkmanager (žiadny latest)
           export ANDROID_HOME=$HOME/android
-          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/bin:$ANDROID_HOME/platform-tools
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
 
-          # Licencie bez broken pipe
-          $ANDROID_HOME/cmdline-tools/bin/sdkmanager --licenses < /dev/null || true
+          # Licencie
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-          # Inštalácia komponentov
-          $ANDROID_HOME/cmdline-tools/bin/sdkmanager \
+          # Inštalácia komponentov podľa buildozer.spec
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0" \
-            "ndk;25.2.9519653"
+            "platforms;android-33" \
+            "build-tools;33.0.2" \
+            "ndk;25.1.8937393"
 
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "ANDROIDNDK=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
+          echo "ANDROIDSDK=$ANDROID_HOME" >> $GITHUB_ENV
 
-      # Buildozer + Cython (kompatibilný s Kivy 2.3.0)
+      # -------------------------------------------
+      # Buildozer + Cython
+      # -------------------------------------------
       - name: Inštalácia Buildozer a Cython
         run: |
           python3 -m pip install --user --upgrade pip
           python3 -m pip install --user buildozer "cython<3"
 
+      # -------------------------------------------
       # Build APK
+      # -------------------------------------------
       - name: Buildozer android debug
+        env:
+          ANDROIDSDK: ${{ env.ANDROIDSDK }}
+          ANDROIDNDK: ${{ env.ANDROIDNDK }}
         run: |
           ~/.local/bin/buildozer -v android debug
 
-      # Nahrať APK ako artifact
+      # -------------------------------------------
+      # Upload APK
+      # -------------------------------------------
       - name: Nahrať APK
         uses: actions/upload-artifact@v4
         with:
@@ -78,7 +94,6 @@ jobs:
           path: bin/*.apk
           retention-days: 30
 
-      # Info o úspechu
       - name: Výsledok buildu
         if: success()
         run: |
