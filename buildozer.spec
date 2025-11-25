@@ -11,7 +11,8 @@ source.include_exts = py,png,jpg,kv,atlas,ttf,json,xml,webp,mp3,wav
 version = 1.0
 
 # --- KIVY + KIVYMD DEV VERZIA ---
-requirements = python3, kivy==2.3.0, kivymd@git+https://github.com/kivymd/KivyMD.git@dev, plyer
+# POZOR: vetva "dev" NEEXISTUJE, musíme použiť master (obsahuje 2.0.1-dev)
+requirements = python3, kivy==2.3.0, kivymd@git+https://github.com/kivymd/KivyMD.git@master, plyer
 
 orientation = portrait
 fullscreen = 0
@@ -20,7 +21,7 @@ fullscreen = 0
 android.api = 33
 android.minapi = 21
 
-# KivyMD potrebuje NDK 25.x – presne túto verziu
+# KivyMD 2.0.1-dev potrebuje NDK 25.x
 android.ndk = 25b
 android.ndk_api = 21
 
@@ -33,7 +34,7 @@ android.accept_sdk_license = True
 android.accept_android_sdk_license = True
 android.accept_android_ndk_license = True
 
-# Ak appka používa internet (odporúčam)
+# Internet povolený
 android.permissions = INTERNET
 
 [buildozer]
