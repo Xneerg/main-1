@@ -1,4 +1,4 @@
-7#pylint:disable=W0611
+#pylint:disable=W0611
 import json
 import os
 import re
