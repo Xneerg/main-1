@@ -30,21 +30,30 @@ jobs:
 
       - name: Inštalácia Android SDK & NDK 25b
         run: |
-          mkdir -p ~/android/cmdline-tools
-          cd ~/android
+          mkdir -p "$HOME/android/cmdline-tools/latest"
+          cd "$HOME/android"
+
+          # stiahnutie cmdline-tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip -q commandlinetools-linux-*.zip -d cmdline-tools
+          unzip -q commandlinetools-linux-*.zip -d cmdline-tools/latest
 
-          export ANDROID_HOME=$HOME/android
-          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/bin:$ANDROID_HOME/platform-tools
+          export ANDROID_HOME="$HOME/android"
+          export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"
 
-          yes | $ANDROID_HOME/cmdline-tools/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+          # prijatie licencií
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --licenses > /dev/null 2>&1 || true
 
-          $ANDROID_HOME/cmdline-tools/bin/sdkmanager \
-            "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
+          # verzie zodpovedajúce buildozer.spec (api 33, build-tools 33.0.2, NDK 25b)
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
+            "platform-tools" \
+            "platforms;android-33" \
+            "build-tools;33.0.2" \
+            "ndk;25.1.8937393"
 
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
+          echo "ANDROIDSDK=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROIDNDK=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
 
       - name: Inštalácia Buildozer
         run: |
@@ -52,6 +61,9 @@ jobs:
           python3 -m pip install --user buildozer "cython<3"
 
       - name: Build APK
+        env:
+          ANDROIDSDK: ${{ env.ANDROIDSDK }}
+          ANDROIDNDK: ${{ env.ANDROIDNDK }}
         run: |
           ~/.local/bin/buildozer -v android debug
 
