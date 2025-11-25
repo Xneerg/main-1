@@ -12,26 +12,49 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # --- KEY FIX: Java 17 (nutné pre Gradle + Android plugin 8.x) ---
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
     - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y \
           python3 python3-pip python3-dev build-essential \
           git zip unzip openjdk-17-jdk \
-          libffi-dev libssl-dev
+          libffi-dev libssl-dev libsqlite3-dev
+
+    # --- Android SDK + NDK SETUP (100% kompatibilné s Buildozerom) ---
+    - name: Install Android SDK + NDK 25b
+      run: |
+        sudo mkdir -p /usr/local/lib/android
+        cd /usr/local/lib/android
+        sudo wget https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip
+        sudo unzip commandlinetools-linux-*.zip -d sdk
+        export ANDROID_HOME=/usr/local/lib/android/sdk
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+
+        echo "yes" | sudo $ANDROID_HOME/cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
+        sudo $ANDROID_HOME/cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_HOME \
+          "platform-tools" \
+          "platforms;android-33" \
+          "build-tools;33.0.2" \
+          "ndk;25.1.8937393"
 
     - name: Install Buildozer
       run: |
         pip install --upgrade pip
         pip install buildozer cython==0.29.36
 
-    - name: Accept Android Licenses
+    - name: Run Buildozer debug build
+      env:
+        ANDROIDSDK: /usr/local/lib/android/sdk
+        ANDROIDNDK: /usr/local/lib/android/sdk/ndk/25.1.8937393
       run: |
-        yes | sudo /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-
-    - name: Run Buildozer debug
-      run: |
-        buildozer android debug
+        buildozer -v android debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
