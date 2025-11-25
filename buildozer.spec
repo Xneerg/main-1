@@ -1,4 +1,5 @@
 [app]
+# --- ZÁKLAD ---
 title = MyApp
 package.name = myapp
 package.domain = org.mycompany
@@ -12,23 +13,35 @@ requirements = python3,kivy==2.3.0
 orientation = portrait
 fullscreen = 0
 
-# --- Android ---
+# --- ANDROID ---
 android.api = 33
 android.minapi = 21
 android.ndk = 25b
 android.ndk_api = 21
-android.archs = arm64-v8a,armeabi-v7a
+android.archs = arm64-v8a, armeabi-v7a
 
 android.build_tools_version = 33.0.2
 android.bootstrap = sdl2
 
-# --- Licencie (POTREBNÉ PRE GITHUB ACTIONS) ---
+# Automaticky prijme licencie (potrebné pre GitHub Actions)
 android.accept_sdk_license = True
 android.accept_android_sdk_license = True
 android.accept_android_ndk_license = True
 
-# Odporúčané – zrýchlenie buildu
+# Voliteľné zrýchlenie buildu
 p4a.local_recipes = ./p4a-recipes
+
+# Zákaz starých a rozbitých JDK/Gradle nastavení
+# GitHub workflow nastaví Java 17, Buildozer to nemá meniť
+android.gradle_dependencies =
+android.gradle_version = 8.0.2
+
+# Ak potrebuješ internet v app:
+android.permissions = INTERNET
+
+# Ak chceš include KivyMD
+# requirements = python3,kivy==2.3.0,kivymd
+
 
 [buildozer]
 log_level = 2
