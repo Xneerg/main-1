@@ -15,18 +15,18 @@ jobs:
       - name: Checkout repozitára
         uses: actions/checkout@v4
 
-      # -------------------------------------------
-      # Java 17 – Povinné pre Android/Gradle
-      # -------------------------------------------
+      # -------------------------
+      # Java 17
+      # -------------------------
       - name: Nastav Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # -------------------------------------------
+      # -------------------------
       # Systémové balíčky
-      # -------------------------------------------
+      # -------------------------
       - name: Inštalácia systémových balíčkov
         run: |
           sudo apt update -y
@@ -37,46 +37,49 @@ jobs:
             libffi-dev libssl-dev libsqlite3-dev libltdl-dev \
             libglib2.0-dev
 
-      # -------------------------------------------
-      # Android SDK + Build-tools 33.0.2 + NDK 25b
-      # -------------------------------------------
+      # -------------------------
+      # Android SDK + NDK 25b
+      # -------------------------
       - name: Inštalácia Android SDK & NDK (presná verzia pre Buildozer)
         run: |
-          mkdir -p $HOME/android/cmdline-tools/latest
+          mkdir -p $HOME/android/cmdline-tools
           cd $HOME/android
 
-          # Najnovší commandlinetools
+          # Stiahni commandlinetools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-12276707_latest.zip
-          unzip -q commandlinetools-linux-*.zip -d cmdline-tools/latest
+          unzip -q commandlinetools-linux-*.zip -d cmdline-tools
+
+          # Prejmenuj priečinok -> latest
+          mv cmdline-tools/cmdline-tools cmdline-tools/latest
 
           export ANDROID_HOME=$HOME/android
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
 
           # Licencie
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses || true
 
-          # Inštalácia komponentov podľa buildozer.spec
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+          # Inštalácia podľa buildozer.spec
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME \
             "platform-tools" \
             "platforms;android-33" \
             "build-tools;33.0.2" \
             "ndk;25.1.8937393"
 
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "ANDROIDNDK=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
           echo "ANDROIDSDK=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROIDNDK=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
 
-      # -------------------------------------------
+      # -------------------------
       # Buildozer + Cython
-      # -------------------------------------------
+      # -------------------------
       - name: Inštalácia Buildozer a Cython
         run: |
           python3 -m pip install --user --upgrade pip
           python3 -m pip install --user buildozer "cython<3"
 
-      # -------------------------------------------
+      # -------------------------
       # Build APK
-      # -------------------------------------------
+      # -------------------------
       - name: Buildozer android debug
         env:
           ANDROIDSDK: ${{ env.ANDROIDSDK }}
@@ -84,9 +87,9 @@ jobs:
         run: |
           ~/.local/bin/buildozer -v android debug
 
-      # -------------------------------------------
+      # -------------------------
       # Upload APK
-      # -------------------------------------------
+      # -------------------------
       - name: Nahrať APK
         uses: actions/upload-artifact@v4
         with:
