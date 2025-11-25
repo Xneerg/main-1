@@ -1,38 +1,46 @@
-# .github/workflows/build.yml
-name: Build APK
+name: Build APK – Hlasenia A (KivyMD 2.0.1-dev)
 
 on:
+  workflow_dispatch:          # ručné spustenie
   push:
-    branches: [ main, master ]
-  workflow_dispatch:
+    branches: [ main, master ] # alebo automaticky pri pushi
 
 jobs:
   build:
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repozitára
+        uses: actions/checkout@v4
 
-      - name: Java 17
-        uses: actions/setup-java@v4
+      # Cache pre rýchlejšie buildy (SDK/NDK)
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
         with:
-          distribution: temurin
-          java-version: '17'
+          path: .buildozer_global
+          key: buildozer-global-${{ hashFiles('buildozer.spec') }}
 
-      # Toto je jediný riadok, ktorý potrebuješ namiesto 30 riadkov wget/unzip/mv
-      - name: Android SDK + NDK 25b
-        uses: kivy/buildozer-action/android-sdk@v1
+      # Hlavný krok: Build APK s Buildozer (automaticky SDK + NDK 25b)
+      - name: Build with Buildozer
+        id: buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
         with:
-          ndk-version: 25.2.9519653     # presne 25b
-          api-level: 34
-          build-tools: 34.0.0
+          command: android debug          # buildí debug APK
+          buildozer_version: stable       # stabilná verzia Buildozer
+          workdir: .                      # koreň projektu (kde je buildozer.spec)
 
-      - name: Buildozer
-        run: |
-          pip install --user buildozer "cython<3"
-          ~/.local/bin/buildozer -v android debug
-
+      # Nahraj APK ako artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: HlaseniaA-APK
-          path: bin/*.apk
+          path: ${{ steps.buildozer.outputs.filename }}  # automaticky nájde APK
+          retention-days: 30
+
+      # Info o úspechu
+      - name: Build info
+        if: success()
+        run: |
+          echo "APK úspešne zbuildované!"
+          ls -lh bin/*.apk || echo "APK je v Artifacts vyššie."
