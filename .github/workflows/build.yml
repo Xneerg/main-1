@@ -1,7 +1,7 @@
-name: Build APK – KivyMD 2.0.1-dev
+name: Build APK – Hlasenia A (KivyMD 2.0.1-dev)
 
 on:
-  workflow_dispatch:          # ručné spustenie
+  workflow_dispatch:          # ručne spustiť
   push:
     branches: [ main, master ]
 
@@ -14,14 +14,14 @@ jobs:
       - name: Checkout repozitára
         uses: actions/checkout@v4
 
-      # Java 17 (povinné pre Gradle v Buildozeri)
+      # Java 17 – povinné
       - name: Nastav Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # Systémové závislosti
+      # Systémové balíčky – čisté, bez chýb (žiadny gstreamer!)
       - name: Inštalácia systémových balíčkov
         run: |
           sudo apt update -y
@@ -30,7 +30,7 @@ jobs:
             git zip unzip openjdk-17-jdk \
             autoconf automake cmake libtool pkg-config \
             libffi-dev libssl-dev libsqlite3-dev libltdl-dev \
-            libglib2.0-dev libgstreamer1.0-dev
+            libglib2.0-dev
 
       # Android SDK + NDK 25b – opravené pre novú štruktúru 2025
       - name: Inštalácia Android SDK & NDK 25b
@@ -41,7 +41,7 @@ jobs:
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip -q commandlinetools-linux-*.zip
 
-          # Oprava: nový archív už obsahuje priamo cmdline-tools/latest
+          # Oprava nového formátu od mája 2025
           mv cmdline-tools/latest ~/android/cmdline-tools/ || true
           rm -rf cmdline-tools
 
@@ -51,7 +51,7 @@ jobs:
           # Licencie
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
 
-          # Inštalácia potrebných komponentov
+          # Potrebné komponenty
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" \
             "platforms;android-34" \
@@ -61,12 +61,12 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
 
-      # Buildozer + správna verzia Cythonu
+      # Buildozer + Cython
       - name: Inštalácia Buildozer a Cython
         run: |
           python3 -m pip install --user --upgrade pip
           python3 -m pip install --user buildozer
-          python3 -m pip install --user "cython<3"  # 0.29.37 alebo 0.29.36 – obe fungujú
+          python3 -m pip install --user "cython<3"   # 0.29.x
 
       # Build APK
       - name: Buildozer android debug
@@ -82,8 +82,8 @@ jobs:
           retention-days: 30
 
       # Info o úspechu
-      - name: Info o builde
+      - name: Výsledok buildu
         if: success()
         run: |
           echo "APK úspešne zbuildované!"
-          ls -lh bin/*.apk
+          ls -lh bin/*.apk || echo "Žiadny APK nebol nájdený (skontroluj log)"
