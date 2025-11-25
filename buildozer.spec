@@ -1,38 +1,39 @@
 [app]
-title = MyApp
-package.name = myapp
-package.domain = org.mycompany
+# --- INFO O APLIKÁCII ---
+title = Hlasenia A
+package.name = hlaseniaa
+package.domain = org.example
 
+# --- KÓD A SÚBORY ---
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,ttf,xml,json,webp
+source.include_exts = py,png,jpg,kv,atlas,ttf,json,xml,webp,mp3,wav
 
-version = 0.1
+version = 1.0
 
-# KivyMD verzia MUST HAVE !!!
-requirements = python3,kivy==2.3.0,kivymd@git+https://github.com/kivymd/KivyMD.git@master
+# --- KIVY + KIVYMD DEV VERZIA ---
+requirements = python3, kivy==2.3.0, kivymd@git+https://github.com/kivymd/KivyMD.git@dev, plyer
 
 orientation = portrait
 fullscreen = 0
 
+# --- ANDROID NASTAVENIA ---
 android.api = 33
 android.minapi = 21
+
+# KivyMD potrebuje NDK 25.x – presne túto verziu
 android.ndk = 25b
 android.ndk_api = 21
+
 android.archs = arm64-v8a, armeabi-v7a
-
-android.build_tools_version = 33.0.2
 android.bootstrap = sdl2
+android.build_tools_version = 33.0.2
 
+# GitHub Actions – automatické prijatie licencií
 android.accept_sdk_license = True
 android.accept_android_sdk_license = True
 android.accept_android_ndk_license = True
 
-p4a.local_recipes = ./p4a-recipes
-
-# Gradle fix
-android.gradle_version = 8.0.2
-android.gradle_dependencies =
-
+# Ak appka používa internet (odporúčam)
 android.permissions = INTERNET
 
 [buildozer]
