@@ -3,7 +3,7 @@ name: Build APK – Hlasenia A (KivyMD 2.0.1-dev)
 on:
   workflow_dispatch:          # ručné spustenie
   push:
-    branches: [ main, master ] # alebo automaticky pri pushi
+    branches: [ main, master ]
 
 jobs:
   build:
@@ -14,33 +14,73 @@ jobs:
       - name: Checkout repozitára
         uses: actions/checkout@v4
 
-      # Cache pre rýchlejšie buildy (SDK/NDK)
-      - name: Cache Buildozer global directory
-        uses: actions/cache@v4
+      # Java 17 – povinné pre Buildozer
+      - name: Nastav Java 17
+        uses: actions/setup-java@v4
         with:
-          path: .buildozer_global
-          key: buildozer-global-${{ hashFiles('buildozer.spec') }}
+          distribution: temurin
+          java-version: '17'
 
-      # Hlavný krok: Build APK s Buildozer (automaticky SDK + NDK 25b)
-      - name: Build with Buildozer
-        id: buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        with:
-          command: android debug          # buildí debug APK
-          buildozer_version: stable       # stabilná verzia Buildozer
-          workdir: .                      # koreň projektu (kde je buildozer.spec)
+      # Systémové závislosti (čisté, bez gstreamer chýb)
+      - name: Inštalácia systémových balíčkov
+        run: |
+          sudo apt update -y
+          sudo apt install -y \
+            python3 python3-pip python3-venv \
+            git zip unzip openjdk-17-jdk \
+            autoconf automake cmake libtool pkg-config \
+            libffi-dev libssl-dev libsqlite3-dev libltdl-dev \
+            libglib2.0-dev
 
-      # Nahraj APK ako artifact
-      - name: Upload APK
+      # Android SDK + NDK 25b – opravené pre novú štruktúru (december 2025)
+      - name: Inštalácia Android SDK & NDK 25b
+        run: |
+          mkdir -p ~/android/cmdline-tools
+          cd ~/android
+
+          # Najnovší commandlinetools (verzia 12.0 – funguje bez mv/latest)
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-12276707_latest.zip
+          unzip -q commandlinetools-linux-*.zip
+
+          # Štruktúra: priamo cmdline-tools/bin/sdkmanager (žiadny latest)
+          export ANDROID_HOME=$HOME/android
+          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/bin:$ANDROID_HOME/platform-tools
+
+          # Licencie bez broken pipe
+          $ANDROID_HOME/cmdline-tools/bin/sdkmanager --licenses < /dev/null || true
+
+          # Inštalácia komponentov
+          $ANDROID_HOME/cmdline-tools/bin/sdkmanager \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "ndk;25.2.9519653"
+
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+
+      # Buildozer + Cython (kompatibilný s Kivy 2.3.0)
+      - name: Inštalácia Buildozer a Cython
+        run: |
+          python3 -m pip install --user --upgrade pip
+          python3 -m pip install --user buildozer "cython<3"
+
+      # Build APK
+      - name: Buildozer android debug
+        run: |
+          ~/.local/bin/buildozer -v android debug
+
+      # Nahrať APK ako artifact
+      - name: Nahrať APK
         uses: actions/upload-artifact@v4
         with:
           name: HlaseniaA-APK
-          path: ${{ steps.buildozer.outputs.filename }}  # automaticky nájde APK
+          path: bin/*.apk
           retention-days: 30
 
       # Info o úspechu
-      - name: Build info
+      - name: Výsledok buildu
         if: success()
         run: |
           echo "APK úspešne zbuildované!"
-          ls -lh bin/*.apk || echo "APK je v Artifacts vyššie."
+          ls -lh bin/*.apk || echo "APK je v Artifacts"
