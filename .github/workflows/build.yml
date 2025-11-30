@@ -77,7 +77,7 @@ jobs:
           python3 -m pip install --user buildozer "cython<3"
 
       # --------------------------------------------------------
-      # Build APK (PRIDANÉ ČISTENIE)
+      # Build APK
       # --------------------------------------------------------
       - name: Build APK with Buildozer
         env:
@@ -85,14 +85,11 @@ jobs:
           ANDROIDNDK: ${{ env.ANDROIDNDK }}
         run: |
           # RIEŠENIE CHYBY 'no such file or directory' pre Kivy/SDL2
-          # Odstráni lokálne uložené, poškodené súbory Kivy, čím Buildozer prinúti 
-          # stiahnuť ich nanovo a skompilovať ich čisto.
+          # Odstráni lokálne uložené, poškodené súbory Kivy.
+          # ODSTRÁNENÝ príkaz 'buildozer android clean', ktorý spôsoboval FileNotFoundError.
           rm -rf .buildozer/android/platform/build-*/build/other_builds/kivy
 
-          # Vyčistí Buildozer cache a dočasné súbory pred novým buildom
-          ~/.local/bin/buildozer android clean
-          
-          # Spustenie kompilácie
+          # Spustenie kompilácie (Buildozer automaticky pripraví, stiahne a skompiluje P4A)
           ~/.local/bin/buildozer -v android debug
 
       # --------------------------------------------------------
