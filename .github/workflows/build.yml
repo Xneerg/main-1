@@ -77,13 +77,22 @@ jobs:
           python3 -m pip install --user buildozer "cython<3"
 
       # --------------------------------------------------------
-      # Build APK
+      # Build APK (PRIDANÉ ČISTENIE)
       # --------------------------------------------------------
       - name: Build APK with Buildozer
         env:
           ANDROIDSDK: ${{ env.ANDROIDSDK }}
           ANDROIDNDK: ${{ env.ANDROIDNDK }}
         run: |
+          # RIEŠENIE CHYBY 'no such file or directory' pre Kivy/SDL2
+          # Odstráni lokálne uložené, poškodené súbory Kivy, čím Buildozer prinúti 
+          # stiahnuť ich nanovo a skompilovať ich čisto.
+          rm -rf .buildozer/android/platform/build-*/build/other_builds/kivy
+
+          # Vyčistí Buildozer cache a dočasné súbory pred novým buildom
+          ~/.local/bin/buildozer android clean
+          
+          # Spustenie kompilácie
           ~/.local/bin/buildozer -v android debug
 
       # --------------------------------------------------------
