@@ -1,10 +1,9 @@
-#7#pylint:disable=W0611
 import json
 import os
 import re
 import functools
-from kivy.app import App # Import z Kivy pre App.user_data_dir
-from pathlib import Path # Import z Pythonu pre prácu s cestami
+from kivy.app import App
+from pathlib import Path
 from kivymd.uix.dialog import MDDialogContentContainer
 from datetime import datetime, timedelta, date
 from kivy.lang import Builder
@@ -46,17 +45,8 @@ from kivy.utils import get_color_from_hex
 from kivy.core.clipboard import Clipboard
 from collections import Counter, defaultdict
 
-try:
-    from plyer import share
-except ImportError:
-    class DummyShare:
-        def share(self, **kwargs):
-            print("Plyer Share API nie je dostupné. Nainštalujte Plyer pre mobilné zdieľanie.")
-            Clock.schedule_once(lambda dt: MDSnackbar(MDSnackbarText(text="Zdieľanie dostupné len na mobilných zariadeniach (chýba Plyer).")).open(), 0.5)
-    share = DummyShare()
 
 # --- UTILITY FUNKCIE PRE PRÁCU SO SÚBORMI (Android kompatibilné) ---
-# Odkaz na Kivy dokumentáciu: Strana 704 v kivy-readthedocs-io-en-latest_kópia.pdf (Vlastnosť App.user_data_dir)
 def get_data_dir() -> Path:
     """Získa a vytvorí priečinok pre dáta aplikácie (platformovo nezávislé)."""
     try:
@@ -71,6 +61,46 @@ def get_data_dir() -> Path:
 def get_data_path(filename: str) -> Path:
     """Získa kompletnú cestu k súboru v priečinku dát aplikácie."""
     return get_data_dir() / filename
+
+def load_data(filename: str, default_data: dict) -> dict:
+    """Univerzálna funkcia na načítanie JSON dát so spracovaním chýb."""
+    path = get_data_path(filename)
+    if path.exists():
+        with open(path, 'r', encoding='utf-8') as f:
+            try: return json.load(f)
+            except json.JSONDecodeError: return default_data
+    return default_data
+
+def save_data(filename: str, data: dict):
+    """Univerzálna funkcia na ukladanie dát do JSON."""
+    path = get_data_path(filename)
+    path.parent.mkdir(parents=True, exist_ok=True) # Ensure directory exists
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+# --- REFAKTOROVANÉ I/O FUNKCIE POUŽÍVAJÚCE load_data/save_data ---
+
+def load_ops_poruchy():
+    return load_data('ops_poruchy.json', {'ops': [], 'poruchy_pre_op': {}})
+def save_ops_poruchy(data):
+    save_data('ops_poruchy.json', data)
+
+def load_hlasenia():
+    return load_data('hlasenia.json', {'hlasenia': []})
+def save_hlasenia(data):
+    save_data('hlasenia.json', data)
+
+def load_settings():
+    return load_data('settings.json', {'primary_palette': 'Lightgreen', 'theme_style': 'Dark'})
+def save_settings(data):
+    save_data('settings.json', data)
+
+def load_jph():
+    return load_data('jph.json', {})
+def save_jph(data):
+    save_data('jph.json', data)
+
+# --- END OF REFACTORED I/O FUNCTIONS ---
 
 def op_sort_key(op_name):
     match = re.search(r'\d+', op_name)
@@ -453,9 +483,6 @@ MDScreenManager:
                         id: copy_button
                         icon: "content-copy"
                         on_release: root.open_copy_menu()
-                    MDActionTopAppBarButton:
-                        icon: "share-variant"
-                        on_release: root.share_current_faults()
                     MDActionTopAppBarButton:
                         icon: "magnify"
                         on_release: app.root.current = 'search'
@@ -854,66 +881,10 @@ def get_slovak_weekday(date_obj):
     weekdays = ["Po", "Ut", "St", "Št", "Pi", "So", "Ne"]
     return weekdays[date_obj.weekday()]
 
-# --- START OF ANDROID-COMPATIBLE I/O FUNCTIONS ---
+# --- REFAKTOROVANÉ I/O FUNKCIE POUŽÍVAJÚCE load_data/save_data ---
 
-def load_ops_poruchy():
-    path = get_data_path('ops_poruchy.json')
-    if path.exists():
-        with open(path, 'r', encoding='utf-8') as f:
-            try: return json.load(f)
-            except json.JSONDecodeError: return {'ops': [], 'poruchy_pre_op': {}}
-    return {'ops': [], 'poruchy_pre_op': {}}
-
-def save_ops_poruchy(data):
-    path = get_data_path('ops_poruchy.json')
-    path.parent.mkdir(parents=True, exist_ok=True) # Ensure directory exists
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
-def load_hlasenia():
-    path = get_data_path('hlasenia.json')
-    if path.exists():
-        with open(path, 'r', encoding='utf-8') as f:
-            try: return json.load(f)
-            except json.JSONDecodeError: return {'hlasenia': []}
-    return {'hlasenia': []}
-
-def save_hlasenia(data):
-    path = get_data_path('hlasenia.json')
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
-def load_settings():
-    path = get_data_path('settings.json')
-    if path.exists():
-        with open(path, 'r', encoding='utf-8') as f:
-            try: return json.load(f)
-            except json.JSONDecodeError: return {'primary_palette': 'Lightgreen', 'theme_style': 'Dark'}
-    # Predvolené nastavenia, ak súbor neexistuje
-    return {'primary_palette': 'Lightgreen', 'theme_style': 'Dark'}
-
-def save_settings(data):
-    path = get_data_path('settings.json')
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
-def load_jph():
-    path = get_data_path('jph.json')
-    if path.exists():
-        with open(path, 'r', encoding='utf-8') as f:
-            try: return json.load(f)
-            except json.JSONDecodeError: return {}
-    return {}
-
-def save_jph(data):
-    path = get_data_path('jph.json')
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
-# --- END OF ANDROID-COMPATIBLE I/O FUNCTIONS ---
+# Tieto sú definované vyššie, ale pre prehľadnosť ich tu nechám len ako zoznam
+# load_ops_poruchy, save_ops_poruchy, load_hlasenia, save_hlasenia, load_settings, save_settings, load_jph, save_jph
 
 
 class HlavnaScreen(MDScreen):
@@ -933,19 +904,45 @@ class HlavnaScreen(MDScreen):
             porucha = app.fault_in_progress['porucha']
             Clock.schedule_once(lambda dt: self.show_duration_selection_dialog(op, porucha))
         else:
-            Clock.schedule_once(self.init_screen_widgets, 0.2)
+            # Zvýšené na 0.5s pre vyššiu spoľahlivosť načítania ID v Android prostredí
+            Clock.schedule_once(self.init_screen_widgets, 0.5) 
 
     def init_screen_widgets(self, *args):
+        # *** KĽÚČOVÁ OPRAVA: Kontrola existencie ID ***
+        if 'shift_goal_input' not in self.ids:
+            # Ak ID nebolo nájdené, metóda sa ukončí, aby sa zabránilo KeyError/AttributeError
+            print("CHYBA: init_screen_widgets sa spustil pred priradením ID! Opakujem o 0.2s.")
+            Clock.schedule_once(self.init_screen_widgets, 0.2)
+            return
+        
         start_of_shift, _ = get_current_shift_timeframe()
         jph_data = load_jph()
         shift_date_key = start_of_shift.strftime('%d.%m.%y')
         shift_type = get_shift_type(start_of_shift.hour)
         goal_key = f"goal_{shift_date_key}_{shift_type}"
         goal_value = jph_data.get(goal_key)
+        
         if goal_value is not None:
             self.ids.shift_goal_input.text = str(goal_value)
         else:
             self.ids.shift_goal_input.text = ""
+            
+        # Zjednodušené podmienky na zistenie, či má zmysel ukladať alebo mazať cieľ
+        current_goal_text = self.ids.shift_goal_input.text.strip()
+        try:
+            if current_goal_text:
+                shift_goal = int(current_goal_text)
+                # Uložíme cieľ, len ak je iný
+                if jph_data.get(goal_key) != shift_goal:
+                    jph_data[goal_key] = shift_goal
+                    save_jph(jph_data)
+            elif goal_key in jph_data:
+                # Ak je pole prázdne, ale cieľ je uložený, cieľ vymažeme
+                del jph_data[goal_key]
+                save_jph(jph_data)
+        except (ValueError, AttributeError):
+            pass
+
         self.update_poruchy_list()
 
     def open_copy_menu(self):
@@ -1065,80 +1062,7 @@ class HlavnaScreen(MDScreen):
             print(f"Chyba kopírovania: {e}")
             MDSnackbar(MDSnackbarText(text="Kopírovanie zlyhalo.")).open()
 
-    def share_current_faults(self):
-        data = load_hlasenia()
-        jph_data = load_jph()
-        all_hlasenia = data.get('hlasenia', [])
-        start_of_shift, end_of_shift = get_current_shift_timeframe()
-        filtered_hlasenia = [
-            h for h in all_hlasenia
-            if start_of_shift <= datetime.strptime(h['datum_cas'], '%Y-%m-%d %H:%M:%S') <= end_of_shift
-        ]
-        today = datetime.now()
-        shift_type = get_shift_type(today.hour)
-        content = f"Súhrn Hlásení Porúch | {today.strftime('%d.%m.%Y')} ({shift_type} Smena)\n"
-        content += "=" * 55 + "\n"
-        
-        # Hlásenia triedime podľa času
-        filtered_hlasenia.sort(key=lambda x: datetime.strptime(x['datum_cas'], '%Y-%m-%d %H:%M:%S'))
-
-        jph_summary = {}
-        current_time = start_of_shift
-        while current_time < end_of_shift:
-            panel_key = current_time.strftime('%d.%m.%y_%H:00')
-            jph_value = jph_data.get(panel_key, 0)
-            if jph_value > 0:
-                 jph_summary[current_time.strftime('%H:00')] = jph_value
-            current_time += timedelta(hours=1)
-
-        if jph_summary:
-            content += "SUMÁR JPH:\n"
-            for hour, jph_val in sorted(jph_summary.items()):
-                 content += f"- Hodina {hour}: {jph_val} ks\n"
-            content += "=" * 55 + "\n"
-
-        # --- ŠTART FORMÁTOVANIA HLÁSENÍ ---
-        
-        # 1. Zoskupíme hlásenia podľa hodiny
-        hlasenia_by_hour = defaultdict(list)
-        for hlasenie in filtered_hlasenia:
-            hodina_str = datetime.strptime(hlasenie['datum_cas'], '%Y-%m-%d %H:%M:%S').strftime('%H:00')
-            hlasenia_by_hour[hodina_str].append(hlasenie)
-
-        # 2. Vytvoríme textový výstup
-        if hlasenia_by_hour:
-            content += "HLÁSENIA PORÚCH:\n"
-            
-            # Iterujeme cez hodiny v chronologickom poradí
-            for hour_str, hlasenia_in_hour in sorted(hlasenia_by_hour.items()):
-                content += f"\n--- Hodina {hour_str} ---\n"
-                
-                for hlasenie in hlasenia_in_hour:
-                    hlasenie_time_str = datetime.strptime(hlasenie['datum_cas'], '%Y-%m-%d %H:%M:%S').strftime('%H:%M:%S')
-                    duration = hlasenie.get('trvanie_minuty', 0)
-                    op = hlasenie.get('op', 'N/A')
-                    porucha = hlasenie.get('porucha', 'N/A')
-
-                    # Nový viacriadkový formát s Markdown
-                    content += f"\n[{hlasenie_time_str}]\n"
-                    content += f"OP: **{op}**\n"
-                    content += f"Porucha: **{porucha}**\n"
-                    content += f"Trvanie: **{duration} minút**\n"
-            
-            content += "\n" # Pridá medzeru pred koncovým oddeľovačom
-        else:
-             content += "ŽIADNE HLÁSENIA PORÚCH ZAZNAMENANÉ.\n"
-             
-        # --- KONIEC FORMÁTOVANIA HLÁSENÍ ---
-
-        content += "=" * 55 + "\n"
-
-        try:
-            share.share(title=f"Poruchy {today.strftime('%d.%m.%Y')} ({shift_type})", text=content)
-            MDSnackbar(MDSnackbarText(text="Spustený dialóg zdieľania.")).open()
-        except Exception as e:
-            print(f"Chyba zdieľania: {e}")
-            MDSnackbar(MDSnackbarText(text="Zdieľanie zlyhalo.")).open()
+    # Metóda share_current_faults BOLA ODSTRÁNENÁ
 
     def delete_hlasenie(self, hlasenie, *args):
         data = load_hlasenia()
@@ -1202,18 +1126,27 @@ class HlavnaScreen(MDScreen):
 
         shift_goal = 0
         goal_key = f"goal_{start_of_shift.strftime('%d.%m.%y')}_{get_shift_type(start_of_shift.hour)}"
-        try:
+        
+        # Kontrola, či je 'shift_goal_input' dostupné, aby sa predišlo pádu
+        if 'shift_goal_input' in self.ids:
+            # Opakovaný kód z init_screen_widgets pre synchronizáciu, ak sa zmenil text
             current_goal_text = self.ids.shift_goal_input.text.strip()
-            if current_goal_text:
-                shift_goal = int(current_goal_text)
-                if jph_data.get(goal_key) != shift_goal:
-                    jph_data[goal_key] = shift_goal
+            try:
+                if current_goal_text:
+                    shift_goal = int(current_goal_text)
+                    if jph_data.get(goal_key) != shift_goal:
+                        jph_data[goal_key] = shift_goal
+                        save_jph(jph_data)
+                elif goal_key in jph_data:
+                    del jph_data[goal_key]
                     save_jph(jph_data)
-            elif goal_key in jph_data:
-                del jph_data[goal_key]
-                save_jph(jph_data)
-        except (ValueError, AttributeError):
-            pass
+            except (ValueError, AttributeError):
+                pass
+        
+        # Ak nebolo možné načítať/uložiť cieľ z widgetu, načíta sa uložená hodnota pre výpočet
+        if shift_goal == 0:
+            shift_goal = jph_data.get(goal_key, 0)
+
 
         hourly_goal = float(shift_goal) / 12.0 if shift_goal > 0 else 0
         all_hlasenia = load_hlasenia().get('hlasenia', [])
