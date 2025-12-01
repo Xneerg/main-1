@@ -8,48 +8,36 @@ source.include_exts = py,png,jpg,kv,atlas,ttf,txt,json,xml,webp,mp3,wav,ogg,mp4
 
 version = 1.0
 
-# ICONY (ak nemáš, pokojne odstráň tieto dve)
-# icon.filename = %(source.dir)s/data/icon.png
-# presplash.filename = %(source.dir)s/data/presplash.png
-
 orientation = portrait
 fullscreen = 0
 
 # -----------------------------------------
-# ZÁVISLOSTI – KivyMD 2.0.1-dev !!!!! (master)
+# ZÁVISLOSTI – PRIDANÉ KRITICKÉ BALÍKY (jnius, pillow)
 # -----------------------------------------
-requirements = python3,kivy==2.3.0,https://github.com/kivymd/KivyMD/archive/master.zip,plyer
+requirements = python3,kivy==2.3.0,https://github.com/kivymd/KivyMD/archive/master.zip,plyer,jnius,pillow
 
 # -----------------------------------------
-# ANDROID NASTAVENIA (kompatibilné s workflow)
+# ANDROID NASTAVENIA (Zvýšenie API pre novšie Androidy, ale stabilný NDK)
 # -----------------------------------------
-android.api = 33
-android.sdk = 33
+android.api = 34           ; Zvýšené na API 34 (Android 14) pre lepšiu kompatibilitu
+android.sdk = 34           ; Zladené s API
 android.minapi = 21
 
-# presná NDK verzia pre p4a + KivyMD 2.x
 android.ndk = 25b
 android.ndk_api = 21
 
 android.archs = arm64-v8a, armeabi-v7a
 android.bootstrap = sdl2
-android.build_tools_version = 33.0.2
+android.build_tools_version = 34.0.0 ; Zladené s API 34
 
 # -----------------------------------------
-# LICENCIE (pre GitHub Actions CI)
-# -----------------------------------------
-android.accept_sdk_license = True
-android.accept_android_sdk_license = True
-android.accept_android_ndk_license = True
-android.accept_google_androidx_license = True
-
-# -----------------------------------------
-# POVOLENIA
+# POVOLENIA (Android 10+ si vyžaduje ACCESS_FINE_LOCATION pre WRITE_EXTERNAL_STORAGE
+#            pretože to už nie je považované za bezpečné povolenie)
 # -----------------------------------------
 android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE,VIBRATE
 
 # -----------------------------------------
-# LOGY A ANDROIDX
+# KIVY/P4A NASTAVENIA
 # -----------------------------------------
 android.enable_androidx = True
 android.logcat_filters = *:S python:D
