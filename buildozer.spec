@@ -19,8 +19,8 @@ requirements = python3,kivy==2.3.0,https://github.com/kivymd/KivyMD/archive/mast
 # -----------------------------------------
 # ANDROID NASTAVENIA (Zvýšenie API pre novšie Androidy, ale stabilný NDK)
 # -----------------------------------------
-android.api = 34           ; Zvýšené na API 34 (Android 14) pre lepšiu kompatibilitu
-android.sdk = 34           ; Zladené s API
+android.api = 34          
+android.sdk = 34           
 android.minapi = 21
 
 android.ndk = 25b
@@ -28,7 +28,7 @@ android.ndk_api = 21
 
 android.archs = arm64-v8a, armeabi-v7a
 android.bootstrap = sdl2
-android.build_tools_version = 34.0.0 ; Zladené s API 34
+android.build_tools_version = 34.0.0 
 
 # -----------------------------------------
 # RIEŠENIE LICENČNEJ CHYBY: Pridaná automatická akceptácia (ak už nebola)
@@ -62,3 +62,4 @@ p4a.branch = master
 [buildozer]
 log_level = 2
 warn_on_root = 1
+
