@@ -31,6 +31,22 @@ android.bootstrap = sdl2
 android.build_tools_version = 34.0.0 ; Zladené s API 34
 
 # -----------------------------------------
+# RIEŠENIE LICENČNEJ CHYBY: Pridaná automatická akceptácia (ak už nebola)
+# Kľúčové na vyriešenie "license is not accepted"
+# -----------------------------------------
+android.accept_sdk_license = True
+android.accept_android_sdk_license = True
+android.accept_android_ndk_license = True
+android.accept_google_androidx_license = True
+
+# -----------------------------------------
+# PRIDANIE EXPLICITNEJ ZÁVISLOSTI NA BUILD-TOOLS
+# Aj keď by to malo byť automatické, Buildozer to niekedy potrebuje.
+# Týmto sa uistíme, že sa nástroje 34.0.0 stiahnu a nainštalujú.
+# -----------------------------------------
+android.add_build_tools = 34.0.0
+
+# -----------------------------------------
 # POVOLENIA (Android 10+ si vyžaduje ACCESS_FINE_LOCATION pre WRITE_EXTERNAL_STORAGE
 #            pretože to už nie je považované za bezpečné povolenie)
 # -----------------------------------------
