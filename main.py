@@ -1,4 +1,4 @@
-# import json
+import json # <--- TOTO JE OPRAVA CHYBY NameError
 import os
 import re
 import functools
