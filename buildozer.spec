@@ -46,7 +46,7 @@ android.add_build_tools = 34.0.0
 # -----------------------------------------------------
 
 # KĽÚČOVÝ FIX pre zápis do dátového adresára aplikácie na modernom Androide
-android.old_perrmissions = True 
+android.old_permissions = True 
 
 # Povolenia (WRITE/READ EXTERNAL STORAGE sú potrebné pre android.old_perrmissions=True)
 android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE,VIBRATE
@@ -68,3 +68,4 @@ android.accept_google_androidx_license = True
 [buildozer]
 log_level = 2
 warn_on_root = 1
+
