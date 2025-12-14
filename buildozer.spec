@@ -49,7 +49,7 @@ android.add_build_tools = 34.0.0
 android.old_permissions = True 
 
 # Povolenia (WRITE/READ EXTERNAL STORAGE sú potrebné pre android.old_perrmissions=True)
-android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE,VIBRATE
+android.permissions = INTERNET,ACCESS_NETWORK_STATE,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE,VIBRATE
 
 android.enable_androidx = True
 android.logcat_filters = *:S python:D
@@ -68,4 +68,5 @@ android.accept_google_androidx_license = True
 [buildozer]
 log_level = 2
 warn_on_root = 1
+
 
